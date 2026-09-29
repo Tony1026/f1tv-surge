@@ -1,8 +1,8 @@
 # F1 TV Surge 节点维护模块
 
-这个项目面向 macOS Surge，脚本保持 iOS 可迁移。它维护一个美国候选节点组，用 F1 TV 的 `CONTENT/PLAY` 和实际 HLS/DASH manifest 检测节点。当前 `F1TV` 节点仍有效时保持原选择；失效时切到最近有效且延迟最低的 PASS 节点。
+这个项目面向 macOS Surge，用于美国区 F1TV，脚本在 iOS 的 Surge 上也能运行。它维护一个美国候选节点组，用 F1 TV 的 `CONTENT/PLAY` 和实际 HLS/DASH manifest 检测节点：当前 `F1TV` 节点有效时保持原选择，失效时切到最近有效且延迟最低的 PASS 节点。
 
-提供两种安装方式：**方式 A** 从 URL 安装模块（推荐，脚本托管在 GitHub），**方式 B** 克隆仓库后把配置片段合并进主配置。因为 Surge 模块不能定义策略组（[官方文档](https://manual.nssurge.com/profile/module.html)），两种方式都需要在主配置加入两个策略组；差别只在脚本来自远程 URL 还是本地路径。
+安装分两种方式：方式 A 从 URL 安装模块，脚本托管在 GitHub；方式 B 克隆仓库后把配置片段合并进主配置。因为 Surge 模块不能定义策略组（[官方文档](https://manual.nssurge.com/profile/module.html)），两种方式都需要在主配置加入两个策略组，差别只在脚本来自远程 URL 还是本地路径。
 
 ## 能力边界
 
@@ -18,7 +18,7 @@
 
 ## 方式 A：安装 Surge 模块（推荐）
 
-模块文件是 [config/f1tv-module.sgmodule](config/f1tv-module.sgmodule)，包含规则、脚本和面板。Surge 模块不能定义策略组，所以两个策略组要在主配置中粘贴一次（两行）。
+模块文件是 [config/f1tv-module.sgmodule](config/f1tv-module.sgmodule)，包含规则、脚本和面板；两个策略组仍要在主配置里粘贴一次（两行）。
 
 1. 在主配置 `[Proxy Group]` 中粘贴（如果你的订阅组不叫 `Airport-All`，改成实际组名）：
 
@@ -53,17 +53,17 @@
 
    这会在 `dist/` 生成两份填好本机绝对路径的文件：`f1tv-module.sgmodule`（可放进 Surge 配置目录作为模块）和 `f1tv-main-profile.conf`（用于手动合并）。
 
-2. 在 Surge Mac 打开当前配置文件，把 `dist/f1tv-main-profile.conf` 中的各段分别合并到主配置的同名 `[Proxy Group]`、`[Rule]`、`[Script]`、`[Panel]` 段。若已有同名分组或面板，先合并配置，避免重复。规则要排在宽泛规则和 `FINAL` 之前。
+2. 在 Surge Mac 打开当前配置文件，把 `dist/f1tv-main-profile.conf` 中的各段分别合并到主配置的同名 `[Proxy Group]`、`[Rule]`、`[Script]`、`[Panel]` 段。如果已经有同名分组或面板，把内容并进去，不要重复定义。规则要排在宽泛规则和 `FINAL` 之前。
 3. 保存并重新加载主配置，确认 `F1TV-US-Candidates` 中有美国节点，`F1TV` 中也有这些节点。
 4. 按 [写入会话字段（一次性）](#写入会话字段一次性) 完成 setup，然后触发一次全量检测。
 
 如果你的 Surge 配置是远程托管或只读的，先在"配置"页面复制出一个本地可编辑副本，再加入这些段。Surge 官方文档说明，模块文件需要放在配置文件目录或通过 URL 安装；当前 macOS UI 没有本地 `.sgmodule` 选择按钮时，直接修改本地 profile 是等价且更简单的方式。
 
-项目规则片段只加入本次浏览器实际观测到的 `f1tv.formula1.com` 和 `ott-video-cf.formula1.com`。实际客户端如使用其他域名，在 Surge 请求列表确认域名与命中的策略，再按需把该域名的规则加到 `[Rule]`；不要把未观测的第三方域名直接视为已覆盖。
+规则片段只加入开发时实际观测到的 `f1tv.formula1.com` 和 `ott-video-cf.formula1.com`。实际客户端如果用到其他域名，先在 Surge 请求列表确认域名和命中的策略，再把该域名的规则加进 `[Rule]`；不要把没有确认过的域名直接当成已覆盖。
 
 ## 写入会话字段（一次性）
 
-真实请求需要短期会话字段。项目不保存账号密码，也不自动登录；字段由你自己从已登录的浏览器里获取，只写入本机 Surge 的持久化存储。
+字段由你自己从已登录的浏览器里获取，只写入本机 Surge 的持久化存储，项目不保存账号密码，也不自动登录。
 
 1. 复制 `src/setup.js` 为 `src/setup.local.js`，填写 `AUTH` 中的短期字段：`ascendontoken`、`entitlementtoken`、`sessionid` 和可选的 `correlationid`、`x-f1-device-info`。获取方法见 [从 Chrome 获取会话字段](#从-chrome-获取会话字段)。
 2. 在主配置的 `[Script]` 段临时新增一整行 `f1tv-setup` 定义（不是填写已有字段），路径指向你的私有副本：
@@ -123,7 +123,7 @@ Surge 脚本编辑器的"执行"使用模拟环境，本机实测约 5 秒就可
 
 ## Fixtures 与验证
 
-`fixtures/` 中的成功播放和 HLS manifest 是从本机 Chrome 的 F1 TV 播放请求提取后脱敏的样例。VPN block 和鉴权过期各有一个明确标记为 `sourceType=synthetic` 的回归样例，它们用于验证 403/401 分类，不能当作真实账号或节点结果。
+`fixtures/` 中的成功播放和 HLS manifest 是从本机 Chrome 的 F1 TV 播放请求提取后脱敏的样例。VPN block 和鉴权过期各有一个明确标记为 `sourceType=synthetic` 的回归样例，用于验证 403/401 分类，不能当作真实账号或节点结果。
 
 本地验证：
 
@@ -154,14 +154,6 @@ node tests/select_runtime.test.js
 
 仓库内提交的模板保留 `__SCRIPT_BASE__` 占位符也可以；此时用户 clone 后用 `tools/render_config.py` 本地渲染即可（方式 B）。
 
-## 真实验收清单
-
-- [ ] 一个节点通过 L1 + L2，并在 Panel 显示 PASS。
-- [ ] 一个节点出现真实非 PASS 原因（例如 manifest 失败或 playback 403）。
-- [ ] 当前节点失效后，`f1tv-select` 切到另一个有效节点。
-- [ ] 无 PASS 时保持现有策略，不切到 DIRECT。
-- [ ] 账号会话失效时 Panel 显示鉴权过期，并提示更新 `f1tv.auth.v1`。
-
 ## 相关官方文档
 
 - Surge JavaScript API：<https://manual.nssurge.com/scripting/api.html>
@@ -170,4 +162,4 @@ node tests/select_runtime.test.js
 - Surge cron 脚本：<https://manual.nssurge.com/scripting/cron.html>
 - Surge 策略组成员导入：<https://manual.nssurge.com/policy-groups/policy-including.html>
 
-使用 F1 TV 时请遵守你所在地区、账户和服务条款。这个项目只负责在已有授权会话下做可用性检测。项目代码以 [MIT License](LICENSE) 发布。
+使用 F1 TV 时请遵守服务条款和账户所在地区的规定。这个项目只在已有授权会话下做可用性检测，代码以 [MIT License](LICENSE) 发布。
