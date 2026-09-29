@@ -1,17 +1,14 @@
 #!name=F1 TV 节点维护
-#!desc=F1 TV 播放探测、候选节点自动切换与状态面板。安装后按 README 完成一次会话字段写入（setup），再运行一次全量检测。
+#!desc=F1 TV 播放探测、候选节点自动切换与状态面板（规则+脚本+面板）。策略组需按 README 在主配置粘贴两行——Surge 模块不能定义策略组。
 #!date=2026-09-29
 
-# script-path 的脚本基址由 tools/render_config.py 填入：--url 指定远程地址（可从 URL 安装），不带参数则填本机克隆路径。
+# Surge 模块不支持 [Proxy Group]：F1TV-US-Candidates 和 F1TV 两个策略组必须在主配置的
+# [Proxy Group] 中定义（见 README 方式 A 第 1 步），否则下面的规则引用不到目标组。
+# script-path 的脚本基址由 tools/render_config.py 填入：--url 指定远程地址，不带参数则填本机克隆路径。
 # 对已渲染过的文件重复渲染是安全的，脚本基址会被重新指向。
-# 如果你的机场订阅组不叫 Airport-All，先改下面 [Proxy Group] 里的引用。
-
-[Proxy Group]
-F1TV-US-Candidates = select, include-other-group=Airport-All, policy-regex-filter=(?i)(美国|US|USA|United States|🇺🇸)
-F1TV = select, include-other-group=F1TV-US-Candidates
 
 [Rule]
-# 模块规则会插入到主配置规则之前，天然排在宽泛规则和 FINAL 前。
+# 模块规则插入到主配置规则之前，天然排在宽泛规则和 FINAL 前。
 DOMAIN-SUFFIX,f1tv.formula1.com,F1TV
 DOMAIN-SUFFIX,ott-video-cf.formula1.com,F1TV
 

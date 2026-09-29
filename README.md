@@ -2,7 +2,7 @@
 
 这个项目面向 macOS Surge，脚本保持 iOS 可迁移。它维护一个美国候选节点组，用 F1 TV 的 `CONTENT/PLAY` 和实际 HLS/DASH manifest 检测节点。当前 `F1TV` 节点仍有效时保持原选择；失效时切到最近有效且延迟最低的 PASS 节点。
 
-提供两种安装方式：**方式 A** 直接安装 Surge 模块（推荐，不需要改主配置），**方式 B** 克隆仓库后把配置片段合并进主配置。两种方式的脚本完全相同。
+提供两种安装方式：**方式 A** 从 URL 安装模块（推荐，脚本托管在 GitHub），**方式 B** 克隆仓库后把配置片段合并进主配置。因为 Surge 模块不能定义策略组（[官方文档](https://manual.nssurge.com/profile/module.html)），两种方式都需要在主配置加入两个策略组；差别只在脚本来自远程 URL 还是本地路径。
 
 ## 能力边界
 
@@ -18,13 +18,19 @@
 
 ## 方式 A：安装 Surge 模块（推荐）
 
-模块文件是 [config/f1tv-module.sgmodule](config/f1tv-module.sgmodule)，包含策略组、规则、脚本和面板四段。安装前需要确认模块里的脚本地址指向一个可访问的托管位置。
+模块文件是 [config/f1tv-module.sgmodule](config/f1tv-module.sgmodule)，包含规则、脚本和面板。Surge 模块不能定义策略组，所以两个策略组要在主配置中粘贴一次（两行）。
 
-1. 确认你的 Surge 主配置 `[Proxy Group]` 中已有订阅组 `Airport-All`。如果名称不同，下载模块文件，把其中所有 `Airport-All` 改成你的实际组名，再按下面的方式安装本地版本。
-2. 在 Surge（Mac 或 iOS）的模块页面选择 **从 URL 安装**，填入模块地址。如果本仓库已发布，直接用：
+1. 在主配置 `[Proxy Group]` 中粘贴（如果你的订阅组不叫 `Airport-All`，改成实际组名）：
+
+   ```ini
+   F1TV-US-Candidates = select, include-other-group=Airport-All, policy-regex-filter=(?i)(美国|US|USA|United States|🇺🇸)
+   F1TV = select, include-other-group=F1TV-US-Candidates
+   ```
+
+2. 在 Surge（Mac 或 iOS）的模块页面选择 **从 URL 安装**，填入模块地址。本仓库已发布，直接用：
 
    ```
-   https://raw.githubusercontent.com/<你的用户名>/f1tv-surge-maintenance/main/config/f1tv-module.sgmodule
+   https://raw.githubusercontent.com/Tony1026/f1tv-surge/main/config/f1tv-module.sgmodule
    ```
 
    如果你 fork 或自托管，先按 [发布你自己的副本](#发布你自己的副本) 渲染出指向你仓库的模块再安装。
@@ -159,6 +165,7 @@ node tests/select_runtime.test.js
 ## 相关官方文档
 
 - Surge JavaScript API：<https://manual.nssurge.com/scripting/api.html>
+- Surge 模块：<https://manual.nssurge.com/profile/module.html>
 - Surge Panel：<https://manual.nssurge.com/tools/panel.html>
 - Surge cron 脚本：<https://manual.nssurge.com/scripting/cron.html>
 - Surge 策略组成员导入：<https://manual.nssurge.com/policy-groups/policy-including.html>
