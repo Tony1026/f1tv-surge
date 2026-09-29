@@ -1,0 +1,26 @@
+{
+  "name": "content-play-auth-expired",
+  "sourceType": "synthetic",
+  "source": "Synthetic regression fixture; replace with a real observed response when available",
+  "request": {
+    "method": "GET",
+    "url": "https://f1tv.formula1.com/3.0/R/ENG/WEB_HLS/ALL/CONTENT/PLAY?channelId=1033&contentId=1000010385&player=player_tm",
+    "headers": {
+      "ascendontoken": "<REDACTED>",
+      "entitlementtoken": "<REDACTED>",
+      "sessionid": "<REDACTED>"
+    }
+  },
+  "response": {
+    "status": 401,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "resultCode": "UNAUTHORIZED",
+      "message": "Session expired",
+      "errorDescription": "<REDACTED>"
+    }
+  },
+  "expectedClassification": "auth_expired"
+}

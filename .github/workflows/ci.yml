@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Syntax check Surge scripts
+        run: |
+          node --check src/probe.js
+          node --check src/select.js
+          node --check src/panel.js
+          node --check src/setup.js
+      - name: Node runtime tests
+        run: |
+          node tests/probe_runtime.test.js
+          node tests/panel_runtime.test.js
+          node tests/select_runtime.test.js
+      - name: Python fixture tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py'
+      - name: Render config templates in both modes
+        run: |
+          python3 tools/render_config.py
+          python3 tools/render_config.py --url https://raw.githubusercontent.com/USER/f1tv-surge-maintenance/main
+          ! grep -r "__SCRIPT_BASE__" dist/

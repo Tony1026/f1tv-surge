@@ -1,0 +1,49 @@
+{
+  "name": "content-play-pass",
+  "source": "Observed in local Chrome capture; sensitive values replaced",
+  "request": {
+    "method": "GET",
+    "url": "https://f1tv.formula1.com/3.0/R/ENG/WEB_HLS/ALL/CONTENT/PLAY?channelId=1033&contentId=1000010385&player=player_tm",
+    "headers": {
+      "ascendontoken": "<REDACTED>",
+      "correlationid": "<REDACTED>",
+      "entitlementtoken": "<REDACTED>",
+      "sessionid": "<REDACTED>",
+      "x-f1-device-info": "<REDACTED>",
+      "accept": "application/json"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "resultCode": "OK",
+      "message": "200",
+      "errorDescription": "",
+      "resultObj": {
+        "cdnType": "Cloudfront",
+        "channelId": 1033,
+        "drmType": "widevine",
+        "pipelineVersion": 6,
+        "playApiVersion": "3.0",
+        "streamType": "SDR_HD_CMAFWV",
+        "entitlementToken": "<REDACTED>",
+        "tme": {
+          "metadata": {
+            "content_id": 1000010385
+          },
+          "feeds": [
+            {
+              "metadata": {
+                "channel_id": 1033
+              },
+              "url": "https://cdn.example.invalid/REDACTED/index.m3u8"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

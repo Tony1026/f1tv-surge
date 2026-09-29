@@ -1,0 +1,18 @@
+{
+  "name": "manifest-m3u8",
+  "source": "Observed HLS master manifest; URLs and variable attributes replaced",
+  "request": {
+    "method": "GET",
+    "url": "https://cdn.example.invalid/REDACTED/index.m3u8",
+    "headers": {
+      "referer": "<REDACTED>"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/vnd.apple.mpegurl"
+    },
+    "body": "#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-STREAM-INF:BANDWIDTH=1000000,RESOLUTION=960x540\nvariant.m3u8\n"
+  }
+}

@@ -1,0 +1,27 @@
+#!name=F1 TV 节点维护
+#!desc=F1 TV 播放探测、候选节点自动切换与状态面板。安装后按 README 完成一次会话字段写入（setup），再运行一次全量检测。
+#!date=2026-09-29
+
+# __SCRIPT_BASE__ 会被 tools/render_config.py 替换：
+#   远程安装：python3 tools/render_config.py --url https://raw.githubusercontent.com/<你的用户名>/f1tv-surge-maintenance/main
+#   本地合并：python3 tools/render_config.py
+# 也可直接全文替换 __SCRIPT_BASE__ 为脚本目录的 URL 或本机绝对路径。
+# 如果你的机场订阅组不叫 Airport-All，先改下面 [Proxy Group] 里的引用。
+
+[Proxy Group]
+F1TV-US-Candidates = select, include-other-group=Airport-All, policy-regex-filter=(?i)(美国|US|USA|United States|🇺🇸)
+F1TV = select, include-other-group=F1TV-US-Candidates
+
+[Rule]
+# 模块规则会插入到主配置规则之前，天然排在宽泛规则和 FINAL 前。
+DOMAIN-SUFFIX,f1tv.formula1.com,F1TV
+DOMAIN-SUFFIX,ott-video-cf.formula1.com,F1TV
+
+[Script]
+f1tv-probe-cron = type=cron,cronexp="0 */8 * * *",timeout=900,script-path=__SCRIPT_BASE__/src/probe.js,argument="candidateGroup=F1TV-US-Candidates;f1tvGroup=F1TV;contentIds=1000010385;batchSize=0;intervalMs=800;timeoutSeconds=10;failTtlSeconds=36000;maxRuntimeSeconds=840;l3Enabled=false;notify=true"
+f1tv-probe-manual = type=generic,timeout=900,script-path=__SCRIPT_BASE__/src/probe.js,argument="candidateGroup=F1TV-US-Candidates;f1tvGroup=F1TV;contentIds=1000010385;batchSize=0;intervalMs=800;timeoutSeconds=10;failTtlSeconds=36000;maxRuntimeSeconds=840;l3Enabled=false;notify=true"
+f1tv-select = type=generic,timeout=15,script-path=__SCRIPT_BASE__/src/select.js,argument="candidateGroup=F1TV-US-Candidates;f1tvGroup=F1TV"
+f1tv-panel = type=generic,timeout=15,script-path=__SCRIPT_BASE__/src/panel.js,argument="f1tvGroup=F1TV;candidateGroup=F1TV-US-Candidates"
+
+[Panel]
+F1TVStatus = title="F1 TV 节点状态",content="请运行一次全量检测后刷新此面板",style=info,script-name=f1tv-panel,update-interval=60
