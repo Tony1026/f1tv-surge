@@ -2,10 +2,8 @@
 #!desc=F1 TV 播放探测、候选节点自动切换与状态面板。安装后按 README 完成一次会话字段写入（setup），再运行一次全量检测。
 #!date=2026-09-29
 
-# https://raw.githubusercontent.com/Tony1026/f1tv-surge/main 会被 tools/render_config.py 替换：
-#   远程安装：python3 tools/render_config.py --url https://raw.githubusercontent.com/<你的用户名>/f1tv-surge-maintenance/main
-#   本地合并：python3 tools/render_config.py
-# 也可直接全文替换 https://raw.githubusercontent.com/Tony1026/f1tv-surge/main 为脚本目录的 URL 或本机绝对路径。
+# script-path 的脚本基址由 tools/render_config.py 填入：--url 指定远程地址（可从 URL 安装），不带参数则填本机克隆路径。
+# 对已渲染过的文件重复渲染是安全的，脚本基址会被重新指向。
 # 如果你的机场订阅组不叫 Airport-All，先改下面 [Proxy Group] 里的引用。
 
 [Proxy Group]

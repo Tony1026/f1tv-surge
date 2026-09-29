@@ -4,26 +4,37 @@
 Two modes:
 
   python3 tools/render_config.py
-      Local mode. __SCRIPT_BASE__ becomes this repository's absolute path.
+      Local mode. The script base becomes this repository's absolute path.
       Output is meant for merging into a local Surge profile on this machine.
 
   python3 tools/render_config.py --url https://raw.githubusercontent.com/USER/f1tv-surge-maintenance/main
-      Remote mode. __SCRIPT_BASE__ becomes the given URL, so the rendered
+      Remote mode. The script base becomes the given URL, so the rendered
       module can be installed in Surge via "Install from URL".
 
-Outputs are written to dist/ and never committed.
+Rendering is idempotent: files that still carry the __SCRIPT_BASE__
+placeholder are filled in, and already-rendered files get every
+script-path base re-pointed to the new location. Outputs are written
+to dist/ and never committed.
 """
 
 import argparse
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PLACEHOLDER = "__SCRIPT_BASE__"
+SCRIPT_BASE_RE = re.compile(r'(?<=script-path=)[^,"\r\n]+?(?=/src/)')
 
 TEMPLATES = [
     ("config/f1tv-module.sgmodule", "f1tv-module.sgmodule"),
     ("config/f1tv-main-profile.template.conf", "f1tv-main-profile.conf"),
 ]
+
+
+def render(text, base):
+    if PLACEHOLDER in text:
+        return text.replace(PLACEHOLDER, base)
+    return SCRIPT_BASE_RE.sub(lambda m: base, text)
 
 
 def main():
@@ -40,10 +51,7 @@ def main():
 
     for src_name, out_name in TEMPLATES:
         text = (ROOT / src_name).read_text(encoding="utf-8")
-        if PLACEHOLDER not in text:
-            raise SystemExit(f"模板缺少占位符 {PLACEHOLDER}：{src_name}")
-        rendered = text.replace(PLACEHOLDER, base)
-        (out_dir / out_name).write_text(rendered, encoding="utf-8")
+        (out_dir / out_name).write_text(render(text, base), encoding="utf-8")
         print(f"已生成 dist/{out_name}（脚本基址：{base}）")
 
 
