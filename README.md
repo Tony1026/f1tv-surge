@@ -1,20 +1,8 @@
 # F1 TV Surge 节点维护模块
 
-这个项目面向 macOS Surge，用于美国区 F1TV，脚本在 iOS 的 Surge 上也能运行。它维护一个美国候选节点组，用 F1 TV 的 `CONTENT/PLAY` 和实际 HLS/DASH manifest 检测节点：当前 `F1TV` 节点有效时保持原选择，失效时切到最近有效且延迟最低的 PASS 节点。
+这个项目面向 macOS Surge，用于美国区 F1TV，脚本在 iOS 的 Surge 上也能运行。它维护一个美国候选节点组，用 F1 TV 的 `CONTENT/PLAY` 和实际 HLS/DASH manifest 检测节点：当前 `F1TV` 节点有效时保持原选择，失效时切到最近有效且延迟最低的 PASS 节点；没有 PASS 时保持原选择，不会切到 DIRECT。
 
 安装分两种方式：方式 A 从 URL 安装模块，脚本托管在 GitHub；方式 B 克隆仓库后把配置片段合并进主配置。因为 Surge 模块不能定义策略组（[官方文档](https://manual.nssurge.com/profile/module.html)），两种方式都需要在主配置加入两个策略组，差别只在脚本来自远程 URL 还是本地路径。
-
-## 能力边界
-
-- 策略组成员由主配置静态定义；脚本只检测、保存状态和切换已有策略。
-- `F1TV-US-Candidates` 从现有订阅组（默认 `Airport-All`，可改名）按名称正则筛选。
-- 每次运行按候选组当前成员数量全量检测；节点间串行间隔默认 800 ms。脚本运行预算为 840 秒，Surge 条目超时为 900 秒。若遇到长时间网络故障导致预算耗尽，状态会记录 `time_budget_exhausted` 和 cursor，避免把未测节点误标为失败。定时任务每 8 小时运行一次，即每天 3 次全量检测。
-- 探测前脚本会把 `F1TV-US-Candidates` 临时切到待测节点，请求中的 `policy` 使用候选组名；探测结束后恢复候选组原选择。Surge 的 `$httpClient.policy` 不能直接使用从组成员列表读出的节点名。
-- PASS TTL 为 24 小时，失败 TTL 为 10 小时，覆盖两次定时全量检测之间的 8 小时间隔。
-- Panel 把有效 PASS 排在前面；未检测和已过期结果显示为 ⏳，近期检测失败才显示 ❌。修复前生成的错误检测记录应清除后重测。
-- L0 为站点 GET 预检，L1 为 `CONTENT/PLAY`，L2 为 manifest；L3 segment 检测默认关闭，打开后只对当前 `F1TV` 节点执行。HLS 会继续取一个 media segment，DASH 只完成 L2 并标记为跳过 L3。使用 GET 是为了兼容会拒绝 HEAD 的 CDN 或代理路径。
-- 没有 PASS 时保持现有选择，不切到 DIRECT，并在 Panel 显示状态。
-- 真实请求需要短期会话字段；项目不保存账号密码，也不自动登录。
 
 ## 方式 A：安装 Surge 模块（推荐）
 
@@ -106,7 +94,7 @@ Surge 脚本编辑器的"执行"使用模拟环境，本机实测约 5 秒就可
 - `f1tvGroup=最终策略组名`
 - `batchSize`（默认 0，表示检测全部候选节点；正整数可限制单次检测数量）
 - `intervalMs`、`timeoutSeconds`
-- `l3Enabled=true|false`
+- `l3Enabled=true|false`（打开后增加 segment 级检测，只对当前 `F1TV` 节点执行；默认关闭）
 - `notify=true|false`
 
 默认 `contentIds=1000010385` 来自开发时一次成功播放的观测样例；它可能随服务目录变化，应替换为你账号长期可观看的 VOD ID。
