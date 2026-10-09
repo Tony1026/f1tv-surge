@@ -1,8 +1,7 @@
 // F1TV Probe for Surge Mac/iOS.
-// The script deliberately stores only status metadata. Never log auth headers or signed URLs.
+// The script deliberately stores only status metadata.
 
 var KEY_CONFIG = "f1tv.config.v1";
-var KEY_AUTH = "f1tv.auth.v1";
 var KEY_NODES = "f1tv.nodes.v1";
 
 var DEFAULT_CONFIG = {
@@ -72,22 +71,6 @@ function getConfig() {
   return config;
 }
 
-function getAuth() {
-  return jsonRead(KEY_AUTH, {});
-}
-
-function authHeaders(auth) {
-  var headers = {};
-  ["ascendontoken", "entitlementtoken", "sessionid", "correlationid", "x-f1-device-info"].forEach(function (key) {
-    if (auth[key]) headers[key] = String(auth[key]);
-  });
-  return headers;
-}
-
-function hasMinimumAuth(headers) {
-  return !!(headers.entitlementtoken && headers.sessionid);
-}
-
 function groupPolicies(groupName, candidateRegex) {
   try {
     var details = $surge.selectGroupDetails() || {};
@@ -155,7 +138,7 @@ function request(method, options, callback) {
 function classifyHttp(error, response, data) {
   if (error) return String(error).toLowerCase().indexOf("timeout") >= 0 ? "timeout" : "network_error";
   var status = response && Number(response.status);
-  if (status === 401) return "auth_expired";
+  if (status === 401) return "playback_blocked";
   if (status === 403) return "playback_blocked";
   if (!response || !status) return "network_error";
   if (status >= 500) return "upstream_error";
@@ -318,13 +301,11 @@ function probeManifest(policy, url, timeout, runL3, callback) {
   });
 }
 
-function probeNode(config, auth, nodePolicy, requestPolicy, callback) {
+function probeNode(config, nodePolicy, requestPolicy, callback) {
   var started = Date.now();
-  var headers = authHeaders(auth);
-  if (!hasMinimumAuth(headers)) {
-    callback({ status: "auth_expired", reason: "missing_session_fields", latencyMs: 0, lastHttpStatus: null });
-    return;
-  }
+  // This probe measures CDN/VPN/region reachability only. F1TV performs that
+  // omitted; a 400/401 application response still proves the route passed CDN.
+  var headers = {};
   // Some CDN/proxy paths reject HEAD while allowing the normal page request.
   // L0 is only a diagnostic preflight; it must not discard a node before the
   // entitlement/playback request, which is the authoritative check.
@@ -343,23 +324,22 @@ function probeNode(config, auth, nodePolicy, requestPolicy, callback) {
       request("GET", { url: playUrl, headers: headers, policy: requestPolicy, timeout: config.timeoutSeconds }, function (playError, playResponse, playData) {
         var playReason = classifyHttp(playError, playResponse, playData);
         var payload = parseJson(playData);
-        if (playReason === "auth_expired" || playReason === "playback_blocked" || playReason === "timeout" || playReason === "network_error") {
-          if (playReason === "auth_expired") {
-            callback({ status: "auth_expired", reason: "content_play_" + playReason, latencyMs: Date.now() - started, lastHttpStatus: playResponse && playResponse.status, contentId: contentId });
+        var playStatus = playResponse && Number(playResponse.status);
+        if (!playError && playStatus >= 200 && playStatus < 500 && playStatus !== 403 && playStatus !== 451) {
+          if (playStatus !== 200 || !payload || String(payload.resultCode || "").toUpperCase() !== "OK") {
+            callback({ status: "pass", reason: "vpn_region_check_passed", latencyMs: Date.now() - started, lastHttpStatus: playStatus, contentId: contentId });
             return;
           }
+        }
+        if (playReason === "playback_blocked" || playReason === "timeout" || playReason === "network_error") {
           lastContentFailure = { status: playReason === "playback_blocked" ? "playback_blocked" : playReason, reason: "content_play_" + playReason, httpStatus: playResponse && playResponse.status };
           tryContent();
           return;
         }
         if (!payload || String(payload.resultCode || "").toUpperCase() !== "OK") {
           var resultText = JSON.stringify(payload || {}).toLowerCase();
-          if (resultText.indexOf("auth") >= 0 || resultText.indexOf("session") >= 0 || resultText.indexOf("token") >= 0) {
-            callback({ status: "auth_expired", reason: "content_play_result", latencyMs: Date.now() - started, lastHttpStatus: playResponse && playResponse.status, contentId: contentId });
-          } else {
-            lastContentFailure = { status: "playback_blocked", reason: "content_play_result", httpStatus: playResponse && playResponse.status };
-            tryContent();
-          }
+          lastContentFailure = { status: "playback_blocked", reason: "content_play_result", httpStatus: playResponse && playResponse.status };
+          tryContent();
           return;
         }
         var feeds = payload.resultObj && payload.resultObj.tme && payload.resultObj.tme.feeds;
@@ -410,7 +390,6 @@ function run() {
   config.timeoutSeconds = Math.max(3, Math.min(10, Number(config.timeoutSeconds) || 10));
   config.intervalMs = Math.max(0, Math.min(1500, Number(config.intervalMs) || 800));
   config.maxRuntimeSeconds = Math.max(30, Math.min(840, Number(config.maxRuntimeSeconds) || 840));
-  var auth = getAuth();
   var policies = groupPolicies(config.candidateGroup, config.candidateRegex);
   var requestedBatchSize = Number(config.batchSize);
   var batchSize = requestedBatchSize > 0 ? Math.min(policies.length, Math.floor(requestedBatchSize)) : policies.length;
@@ -489,7 +468,7 @@ function run() {
       setTimeout(next, Math.max(0, Number(config.intervalMs) || 800));
       return;
     }
-    probeNode(config, auth, item.policy, config.candidateGroup, function (result) {
+    probeNode(config, item.policy, config.candidateGroup, function (result) {
       if (finished) return;
       var previous = state.nodes[item.policy] || {};
       var ttl = result.status === "pass" ? config.passTtlSeconds : config.failTtlSeconds;
@@ -508,7 +487,6 @@ function run() {
       state.updatedAt = Math.floor(Date.now() / 1000);
       state.lastRun = { status: "in_progress", count: position, finishedAt: state.updatedAt };
       jsonWrite(KEY_NODES, state);
-      if (previous.status !== result.status && result.status === "auth_expired") notifyOnce("F1TV 会话已过期", "请更新 f1tv.auth.v1 后重新运行探测。");
       setTimeout(next, Math.max(0, Number(config.intervalMs) || 800));
     });
   }

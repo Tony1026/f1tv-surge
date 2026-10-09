@@ -34,7 +34,7 @@ var lines = [
 if (!names.length) lines.push("暂无候选节点。请检查策略组。");
 names.slice(0, 60).forEach(function (name) {
   var node = nodes[name] || {};
-  var mark = !fresh(node) || !node.status ? "⏳" : (node.status === "pass" ? "✅" : (node.status === "auth_expired" ? "🔑" : (node.status === "timeout" ? "⚠️" : "❌")));
+  var mark = !fresh(node) || !node.status ? "⏳" : (node.status === "pass" ? "✅" : (node.status === "timeout" ? "⚠️" : "❌"));
   var reason = !fresh(node) || !node.status ? (node.lastCheckedAt ? "结果已过期" : "待检测") : (node.reason || node.status);
   var latency = node.latencyMs ? node.latencyMs + " ms" : "-";
   var checkedAt = node.lastCheckedAt ? new Date(node.lastCheckedAt * 1000).toLocaleTimeString() : "-";

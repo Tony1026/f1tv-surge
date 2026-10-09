@@ -1,5 +1,3 @@
-# Never commit a setup copy containing live F1 TV session fields.
-src/setup.local.js
 *.har
 
 # Rendered local/remote config snippets (contain machine-specific paths or URLs).
@@ -10,3 +8,4 @@ __pycache__/
 *.pyc
 .DS_Store
 .mimosa/
+src/setup.local.js

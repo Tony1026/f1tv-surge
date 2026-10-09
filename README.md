@@ -23,7 +23,7 @@
 
    如果你 fork 或自托管，先按 [发布你自己的副本](#发布你自己的副本) 渲染出指向你仓库的模块再安装。
 3. 保存并重新加载配置，确认 `F1TV-US-Candidates` 中筛出了美国节点，`F1TV` 中也有这些节点。
-4. 按 [写入会话字段（一次性）](#写入会话字段一次性) 完成 setup，然后触发一次全量检测。
+4. 直接触发一次全量检测；探测只验证 F1TV 播放接口是否通过 VPN/地区拦截。
 
 注意：如果你之前用过方式 B 手动合并过这些段，不要再安装模块，避免重复定义同名策略组和脚本。
 
@@ -43,36 +43,11 @@
 
 2. 在 Surge Mac 打开当前配置文件，把 `dist/f1tv-main-profile.conf` 中的各段分别合并到主配置的同名 `[Proxy Group]`、`[Rule]`、`[Script]`、`[Panel]` 段。如果已经有同名分组或面板，把内容并进去，不要重复定义。规则要排在宽泛规则和 `FINAL` 之前。
 3. 保存并重新加载主配置，确认 `F1TV-US-Candidates` 中有美国节点，`F1TV` 中也有这些节点。
-4. 按 [写入会话字段（一次性）](#写入会话字段一次性) 完成 setup，然后触发一次全量检测。
+4. 直接触发一次全量检测；探测只验证 F1TV 播放接口是否通过 VPN/地区拦截。
 
 如果你的 Surge 配置是远程托管或只读的，先在"配置"页面复制出一个本地可编辑副本，再加入这些段。Surge 官方文档说明，模块文件需要放在配置文件目录或通过 URL 安装；当前 macOS UI 没有本地 `.sgmodule` 选择按钮时，直接修改本地 profile 是等价且更简单的方式。
 
 规则片段只加入开发时实际观测到的 `f1tv.formula1.com` 和 `ott-video-cf.formula1.com`。实际客户端如果用到其他域名，先在 Surge 请求列表确认域名和命中的策略，再把该域名的规则加进 `[Rule]`；不要把没有确认过的域名直接当成已覆盖。
-
-## 写入会话字段（一次性）
-
-字段由你自己从已登录的浏览器里获取，只写入本机 Surge 的持久化存储，项目不保存账号密码，也不自动登录。
-
-1. 复制 `src/setup.js` 为 `src/setup.local.js`，填写 `AUTH` 中的短期字段：`ascendontoken`、`entitlementtoken`、`sessionid` 和可选的 `correlationid`、`x-f1-device-info`。获取方法见 [从 Chrome 获取会话字段](#从-chrome-获取会话字段)。
-2. 在主配置的 `[Script]` 段临时新增一整行 `f1tv-setup` 定义（不是填写已有字段），路径指向你的私有副本：
-
-   ```ini
-   f1tv-setup = type=generic,timeout=15,script-path=/path/to/f1tv-surge-maintenance/src/setup.local.js
-   ```
-
-   方式 B 用户可以直接用 `dist/f1tv-main-profile.conf` 末尾注释里的这一行，把 `setup.local.js` 的路径改成实际值。
-3. 在 Surge 中运行 `f1tv-setup` 一次。收到"setup 完成"通知后，删除私有 setup 文件，并删除主配置里的临时 `f1tv-setup` 行。
-
-不要把填写后的副本加入版本库或分享。`src/setup.local.js` 已在 `.gitignore` 中，但仍请确认不要把它提交或发送给任何人。
-
-## 从 Chrome 获取会话字段
-
-只在自己的已登录 F1 TV 页面操作，不要把请求导出文件或字段发给任何人：
-
-1. 打开 Chrome DevTools 的 **Network**，勾选 Preserve log，然后重新点击一次视频播放。
-2. 过滤 `CONTENT/PLAY`，打开状态为 200 的请求，在 **Headers → Request Headers** 找到 `ascendontoken`、`entitlementtoken`、`sessionid`、`correlationid` 和 `x-f1-device-info`。
-3. 只把这些值填入本机私有的 `src/setup.local.js`（由 `src/setup.js` 复制而来），按上面的步骤临时注册并运行一次，之后删除私有文件并移除临时脚本条目。
-4. 触发一次全量检测。如果页面曾经把 token 暴露到日志、截图或聊天记录，先退出 F1 TV 并重新登录，再重新取值。
 
 ## 触发全量检测
 
@@ -103,21 +78,20 @@ Surge 脚本编辑器的"执行"使用模拟环境，本机实测约 5 秒就可
 
 状态使用以下带版本 key：
 
-- `f1tv.auth.v1`：短期会话字段
 - `f1tv.config.v1`：运行参数
 - `f1tv.nodes.v1`：节点状态、原因、HTTP 状态、延迟和 TTL
 
-状态不会保存 cookie、Authorization 原文或完整签名 manifest URL；Panel 只显示脱敏后的原因和主机级信息。更新会话时重新执行一次写入会话字段的流程即可。
+状态不会保存 cookie、Authorization 原文或完整签名 manifest URL；Panel 只显示脱敏后的原因和主机级信息。
 
 ## Fixtures 与验证
 
-`fixtures/` 中的成功播放和 HLS manifest 是从本机 Chrome 的 F1 TV 播放请求提取后脱敏的样例。VPN block 和鉴权过期各有一个明确标记为 `sourceType=synthetic` 的回归样例，用于验证 403/401 分类，不能当作真实账号或节点结果。
+`fixtures/` 中的成功播放和 HLS manifest 是从本机 Chrome 的 F1 TV 播放请求提取后脱敏的样例。VPN block 有一个明确标记为 `sourceType=synthetic` 的回归样例，不能当作真实账号或节点结果。
 
 本地验证：
 
 ```bash
 python3 -m unittest discover -s tests -p 'test_*.py'
-node --check src/probe.js && node --check src/select.js && node --check src/panel.js && node --check src/setup.js
+node --check src/probe.js && node --check src/select.js && node --check src/panel.js
 node tests/probe_runtime.test.js
 node tests/panel_runtime.test.js
 node tests/select_runtime.test.js

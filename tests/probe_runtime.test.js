@@ -9,7 +9,6 @@ const candidates = Array.from({length: 6}, (_, index) => `🇺🇸 Test US ${ind
 const group = 'F1TV-US-Candidates';
 const decisions = {[group]: 'Manual', F1TV: 'Manual'};
 const store = new Map([
-  ['f1tv.auth.v1', JSON.stringify({entitlementtoken: 'test-entitlement', sessionid: 'test-session'})],
   ['f1tv.config.v1', JSON.stringify({batchSize: 0, intervalMs: 1, notify: false})],
 ]);
 const pendingTimers = new Set();

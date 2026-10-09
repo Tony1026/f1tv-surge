@@ -25,11 +25,8 @@ class FixtureContractTests(unittest.TestCase):
 
     def test_synthetic_failure_fixture_contracts(self):
         vpn = self.load("content-play-vpn-block.json")
-        auth = self.load("content-play-auth-expired.json")
         self.assertEqual(vpn["sourceType"], "synthetic")
         self.assertEqual(vpn["response"]["status"], 403)
-        self.assertEqual(auth["sourceType"], "synthetic")
-        self.assertEqual(auth["response"]["status"], 401)
 
     def test_fixtures_do_not_contain_session_material(self):
         text = "\n".join(p.read_text(encoding="utf-8") for p in FIXTURES.glob("*.json"))
